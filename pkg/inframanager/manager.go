@@ -16,17 +16,8 @@ limitations under the License.
 */
 package inframanager
 
-// Config provides configuration to the InfraManager implementation
-type Config struct {
-	/* TBD */
-}
-
-// Manager is the interface to an infrastructure manager implementation
-type Manager interface {
-
-	// Configure sets the configuration of the infrastructure manager
-	Configure(*Config) error
-
+// Interface is the interface to an infrastructure manager implementation
+type Interface interface {
 	// Start the service using a specific configuration
 	Start() error
 

@@ -15,13 +15,33 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 //go:generate mockgen -package=mock -destination=mock/cloud.mock.go github.com/libopenstorage/rico/pkg/cloudprovider Interface
-package cloud
+package cloudprovider
+
+// DeviceSpecs specifies the type of drive to create
+type DeviceSpecs struct {
+	// Size in GiB
+	Size uint64
+}
+
+// Device container generic cloud information
+type Device struct {
+
+	// Cloud device ID
+	ID string
+
+	// Path of device node on the host
+	Path string
+
+	// Size in GiB
+	Size uint64
+}
 
 // Interface provides a pluggable interface for cloud providers
 type Interface interface {
-	// DeviceAdd creates and attaches new device to a node
-	DeviceAdd( /* TBD */ ) error
+	// DeviceAdd creates and attaches new device to a node returning
+	// the id of the newly created device
+	DeviceCreate(instanceID string, device *DeviceSpecs) (*Device, error)
 
-	// DeviceRemove detaches and deletes a cloud block device from a node
-	DeviceDelete( /* TBD */ ) error
+	// DeviceDelete detaches and deletes a cloud block device from a node
+	DeviceDelete(instanceID string, deviceID string) error
 }
