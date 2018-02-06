@@ -6,6 +6,7 @@ package mock
 
 import (
 	gomock "github.com/golang/mock/gomock"
+	cloudprovider "github.com/libopenstorage/rico/pkg/cloudprovider"
 	reflect "reflect"
 )
 
@@ -32,26 +33,27 @@ func (m *MockInterface) EXPECT() *MockInterfaceMockRecorder {
 	return m.recorder
 }
 
-// DeviceAdd mocks base method
-func (m *MockInterface) DeviceAdd() error {
-	ret := m.ctrl.Call(m, "DeviceAdd")
-	ret0, _ := ret[0].(error)
-	return ret0
+// DeviceCreate mocks base method
+func (m *MockInterface) DeviceCreate(arg0 string, arg1 *cloudprovider.DeviceSpecs) (*cloudprovider.Device, error) {
+	ret := m.ctrl.Call(m, "DeviceCreate", arg0, arg1)
+	ret0, _ := ret[0].(*cloudprovider.Device)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
-// DeviceAdd indicates an expected call of DeviceAdd
-func (mr *MockInterfaceMockRecorder) DeviceAdd() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeviceAdd", reflect.TypeOf((*MockInterface)(nil).DeviceAdd))
+// DeviceCreate indicates an expected call of DeviceCreate
+func (mr *MockInterfaceMockRecorder) DeviceCreate(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeviceCreate", reflect.TypeOf((*MockInterface)(nil).DeviceCreate), arg0, arg1)
 }
 
 // DeviceDelete mocks base method
-func (m *MockInterface) DeviceDelete() error {
-	ret := m.ctrl.Call(m, "DeviceDelete")
+func (m *MockInterface) DeviceDelete(arg0, arg1 string) error {
+	ret := m.ctrl.Call(m, "DeviceDelete", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DeviceDelete indicates an expected call of DeviceDelete
-func (mr *MockInterfaceMockRecorder) DeviceDelete() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeviceDelete", reflect.TypeOf((*MockInterface)(nil).DeviceDelete))
+func (mr *MockInterfaceMockRecorder) DeviceDelete(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeviceDelete", reflect.TypeOf((*MockInterface)(nil).DeviceDelete), arg0, arg1)
 }
