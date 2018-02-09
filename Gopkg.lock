@@ -2,6 +2,12 @@
 
 
 [[projects]]
+  name = "github.com/Sirupsen/logrus"
+  packages = ["."]
+  revision = "d682213848ed68c0a260ca37d6dd5ace8423f5ba"
+  version = "v1.0.4"
+
+[[projects]]
   name = "github.com/aws/aws-sdk-go"
   packages = [
     "aws",
@@ -33,8 +39,8 @@
     "service/opsworks",
     "service/sts"
   ]
-  revision = "1b176c5c6b57adb03bb982c21930e708ebca5a77"
-  version = "v1.12.70"
+  revision = "de28909e9837364f0368d94ddcba085c57af3c12"
+  version = "v1.12.73"
 
 [[projects]]
   name = "github.com/davecgh/go-spew"
@@ -62,58 +68,17 @@
 [[projects]]
   branch = "master"
   name = "github.com/libopenstorage/openstorage"
-  packages = ["pkg/storageops"]
-  revision = "7611cb033cadf5ee28d16c83c8cb7bd13f2e1091"
+  packages = [
+    "pkg/storageops",
+    "pkg/storageops/aws"
+  ]
+  revision = "b105d39e03bdb7f87fffdd521c7b65056d56949c"
 
 [[projects]]
   name = "github.com/lpabon/godbc"
   packages = ["."]
   revision = "432535de9415f4e0333804357bcdf9024bf5748b"
   version = "v1.0"
-
-[[projects]]
-  name = "github.com/onsi/ginkgo"
-  packages = [
-    ".",
-    "config",
-    "internal/codelocation",
-    "internal/containernode",
-    "internal/failer",
-    "internal/leafnodes",
-    "internal/remote",
-    "internal/spec",
-    "internal/spec_iterator",
-    "internal/specrunner",
-    "internal/suite",
-    "internal/testingtproxy",
-    "internal/writer",
-    "reporters",
-    "reporters/stenographer",
-    "reporters/stenographer/support/go-colorable",
-    "reporters/stenographer/support/go-isatty",
-    "types"
-  ]
-  revision = "9eda700730cba42af70d53180f9dcce9266bc2bc"
-  version = "v1.4.0"
-
-[[projects]]
-  name = "github.com/onsi/gomega"
-  packages = [
-    ".",
-    "format",
-    "internal/assertion",
-    "internal/asyncassertion",
-    "internal/oraclematcher",
-    "internal/testingtsupport",
-    "matchers",
-    "matchers/support/goraph/bipartitegraph",
-    "matchers/support/goraph/edge",
-    "matchers/support/goraph/node",
-    "matchers/support/goraph/util",
-    "types"
-  ]
-  revision = "003f63b7f4cff3fc95357005358af2de0f5fe152"
-  version = "v1.3.0"
 
 [[projects]]
   name = "github.com/pmezard/go-difflib"
@@ -125,7 +90,7 @@
   branch = "master"
   name = "github.com/portworx/sched-ops"
   packages = ["task"]
-  revision = "ba6902bf86104d94e4224cbf65b03f19a4cb7c73"
+  revision = "04199971a164ff6ac2d27ba982a64322662df533"
 
 [[projects]]
   name = "github.com/stretchr/testify"
@@ -137,57 +102,26 @@
   branch = "master"
   name = "go.pedge.io/dlog"
   packages = ["."]
-  revision = "5d628f0fcf42b88b7b5e405837b20f66f6e69bf2"
+  revision = "259758e801e1eab2626d1c1f1767994f8e40e55a"
 
 [[projects]]
   branch = "master"
-  name = "golang.org/x/net"
-  packages = [
-    "html",
-    "html/atom",
-    "html/charset"
-  ]
-  revision = "2fb46b16b8dda405028c50f7c7f0f9dd1fa6bfb1"
+  name = "golang.org/x/crypto"
+  packages = ["ssh/terminal"]
+  revision = "5119cf507ed5294cc409c092980c7497ee5d6fd2"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
-  packages = ["unix"]
-  revision = "37707fdb30a5b38865cfb95e5aab41707daec7fd"
-
-[[projects]]
-  branch = "master"
-  name = "golang.org/x/text"
   packages = [
-    "encoding",
-    "encoding/charmap",
-    "encoding/htmlindex",
-    "encoding/internal",
-    "encoding/internal/identifier",
-    "encoding/japanese",
-    "encoding/korean",
-    "encoding/simplifiedchinese",
-    "encoding/traditionalchinese",
-    "encoding/unicode",
-    "internal/gen",
-    "internal/tag",
-    "internal/utf8internal",
-    "language",
-    "runes",
-    "transform",
-    "unicode/cldr"
+    "unix",
+    "windows"
   ]
-  revision = "e19ae1496984b1c655b8044a65c0300a3c878dd3"
-
-[[projects]]
-  branch = "v2"
-  name = "gopkg.in/yaml.v2"
-  packages = ["."]
-  revision = "d670f9405373e636a5a2765eea47fac0c9bc91a4"
+  revision = "37707fdb30a5b38865cfb95e5aab41707daec7fd"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "ff9e34487674f56360b3a79d8fff0491f2166b7b2b6c7818c4f14fec06ecb16b"
+  inputs-digest = "1a334e58df89f63d4fc82be0f53f9bb85c2a0ad8095a6811e9dd34820ab8747a"
   solver-name = "gps-cdcl"
   solver-version = 1

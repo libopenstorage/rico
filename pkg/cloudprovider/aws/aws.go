@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 
+	awsops "github.com/libopenstorage/openstorage/pkg/storageops/aws"
 	"github.com/libopenstorage/rico/pkg/cloudprovider"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -31,7 +32,6 @@ import (
 
 // Provider has the client and state information to communicate with AWS
 type Provider struct {
-	ops  *Ec2Ops
 	ec2c *ec2.EC2
 }
 
@@ -52,11 +52,12 @@ func NewProvider() *Provider {
 			Region: &region,
 		},
 	))
-	ec2ops := NewEc2Ops(ec2c)
+	if ec2c == nil {
+		return nil
+	}
 
 	return &Provider{
 		ec2c: ec2c,
-		ops:  ec2ops,
 	}
 }
 
@@ -66,8 +67,13 @@ func (p *Provider) DeviceCreate(
 	device *cloudprovider.DeviceSpecs,
 ) (*cloudprovider.Device, error) {
 
+	// Create an aws ops object
+	ops := awsops.NewEc2Storage(instanceID, p.ec2c)
+
 	// Get availability zone of the instance
-	description, err := p.ops.DescribeInstance(instanceID)
+	descriptionI, err := ops.Describe()
+	description := descriptionI.(*ec2.Instance)
+
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +87,7 @@ func (p *Provider) DeviceCreate(
 		VolumeType:       &voltype,
 		Size:             &size,
 	}
-	d, err := p.ops.Create(volreq, nil)
+	d, err := ops.Create(volreq, nil)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create volume: %v", err)
 	}
@@ -91,14 +97,14 @@ func (p *Provider) DeviceCreate(
 	}
 
 	// Attach the volume
-	path, err := p.ops.Attach(instanceID, *vol.VolumeId)
+	path, err := ops.Attach(*vol.VolumeId)
 	if err != nil {
 		reterr := fmt.Errorf("Unable to attach volume %s to %s: %v",
 			*vol.VolumeId,
 			instanceID,
 			err)
 		dlog.Errorf(err.Error())
-		if err := p.ops.Delete(*vol.VolumeId); err != nil {
+		if err := ops.Delete(*vol.VolumeId); err != nil {
 			dlog.Errorf("Failed to delete volume %s: %v", *vol.VolumeId, err)
 		}
 		return nil, reterr
@@ -113,9 +119,11 @@ func (p *Provider) DeviceCreate(
 
 // DeviceDelete detaches the volume from the specified node, then deletes it
 func (p *Provider) DeviceDelete(instanceID string, deviceID string) error {
+	// Create an aws ops object
+	ops := awsops.NewEc2Storage(instanceID, p.ec2c)
 
 	// Detach volume
-	if err := p.ops.Detach(instanceID, deviceID); err != nil {
+	if err := ops.Detach(deviceID); err != nil {
 		return fmt.Errorf("Failed to detach volume %s from instance %s: %v",
 			deviceID,
 			instanceID,
@@ -123,7 +131,7 @@ func (p *Provider) DeviceDelete(instanceID string, deviceID string) error {
 	}
 
 	// Delete volume
-	if err := p.ops.Delete(deviceID); err != nil {
+	if err := ops.Delete(deviceID); err != nil {
 		return fmt.Errorf("Failed to delete volume %s: %v",
 			deviceID,
 			err)

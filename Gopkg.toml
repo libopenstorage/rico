@@ -24,6 +24,9 @@
 #   go-tests = true
 #   unused-packages = true
 
+[[constraint]]
+  name = "github.com/libopenstorage/openstorage"
+  branch = "master"
 
 [[constraint]]
   name = "github.com/golang/mock"
