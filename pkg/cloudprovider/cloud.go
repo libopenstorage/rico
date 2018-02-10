@@ -1,5 +1,5 @@
 /*
-Package cloud provides the interfaces to the cloud provider
+Package cloudprovider provides the interfaces to the cloud provider
 Copyright 2018 Portworx
 
 Licensed under the Apache License, Version 2.0 (the "License");

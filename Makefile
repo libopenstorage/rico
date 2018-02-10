@@ -5,7 +5,7 @@ endif
 all:
 	echo "Nothing yet"
 
-verify: vet test
+verify: vet test verify
 
 test:
 	go test $(PKGS)
