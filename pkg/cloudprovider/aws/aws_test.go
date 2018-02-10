@@ -21,6 +21,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/aws/aws-sdk-go/service/ec2"
+	awsops "github.com/libopenstorage/openstorage/pkg/storageops/aws"
 	"github.com/libopenstorage/rico/pkg/cloudprovider"
 	"github.com/stretchr/testify/assert"
 )
@@ -46,6 +48,7 @@ func TestAwsDeviceAddDelete(t *testing.T) {
 	numInstances := len(instances)
 
 	a := NewProvider()
+	assert.NotNil(t, a)
 
 	tests := []struct {
 		size     uint64
@@ -58,14 +61,6 @@ func TestAwsDeviceAddDelete(t *testing.T) {
 		{
 			size:     2,
 			instance: instances[2%numInstances],
-		},
-		{
-			size:     4,
-			instance: instances[3%numInstances],
-		},
-		{
-			size:     12,
-			instance: instances[4%numInstances],
 		},
 	}
 
@@ -82,7 +77,10 @@ func TestAwsDeviceAddDelete(t *testing.T) {
 		assert.Equal(t, device.Size, test.size)
 
 		// Check that the device was added
-		info, err := a.ops.DescribeInstance(test.instance)
+		ops := awsops.NewEc2Storage(test.instance, a.ec2c)
+		infoI, err := ops.Describe()
+		info := infoI.(*ec2.Instance)
+
 		assert.Nil(t, err)
 		assert.NotNil(t, info)
 
@@ -90,23 +88,8 @@ func TestAwsDeviceAddDelete(t *testing.T) {
 		for _, bd := range info.BlockDeviceMappings {
 			if *bd.Ebs.VolumeId == device.ID {
 				found = true
-
-				// TODO(lpabon)
-				// The following will need to be investigated to see
-				// what ec2ops is doing.
-				/*
-										        Test:           TestDeviceAddDelete
-						        Error Trace:    aws_test.go:84
-						        Error:          Not equal:
-						                        expected: "/dev/sdf"
-						                        actual  : "/dev/xvdf"
-						        Test:           TestDeviceAddDelete
-						        Error Trace:    aws_test.go:84
-						        Error:          Not equal:
-						                        expected: "/dev/sdg"
-												actual  : "/dev/xvdg"
-					assert.Equal(t, *bd.DeviceName, device.Path)
-				*/
+				assert.Equal(t, *bd.DeviceName, device.Path)
+				break
 			}
 		}
 		assert.True(t, found)
@@ -116,7 +99,8 @@ func TestAwsDeviceAddDelete(t *testing.T) {
 		assert.Nil(t, err)
 
 		// Check that the device was added
-		info, err = a.ops.DescribeInstance(test.instance)
+		infoI, err = ops.Describe()
+		info = infoI.(*ec2.Instance)
 		assert.Nil(t, err)
 		assert.NotNil(t, info)
 
@@ -124,6 +108,7 @@ func TestAwsDeviceAddDelete(t *testing.T) {
 		for _, bd := range info.BlockDeviceMappings {
 			if *bd.Ebs.VolumeId == device.ID {
 				found = true
+				break
 			}
 		}
 		assert.False(t, found)
