@@ -21,6 +21,9 @@ package cloudprovider
 type DeviceSpecs struct {
 	// Size in GiB
 	Size uint64
+
+	// Parameters specific to this device
+	Parameters map[string]string
 }
 
 // Device container generic cloud information

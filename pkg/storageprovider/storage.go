@@ -61,6 +61,10 @@ type StorageNode struct {
 	// Devices is a list of devices on this node
 	Devices []*Device
 
+	// Classes is a list of classes supported. If none are provided,
+	// it defaults to all
+	Classes []string
+
 	// Private can be used by the storage system as a cookie
 	Private interface{}
 }
