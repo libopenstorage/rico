@@ -61,6 +61,18 @@ func NewProvider() *Provider {
 	}
 }
 
+func (p *Provider) volumeRequestFromParameters(
+	device *cloudprovider.DeviceSpecs,
+	volreq *ec2.Volume,
+) error {
+
+	// Get parameters
+	// TODO: Get parameters
+	voltype := opsworks.VolumeTypeGp2
+	volreq.VolumeType = &voltype
+	return nil
+}
+
 // DeviceCreate creates and attaches a device to a specific node
 func (p *Provider) DeviceCreate(
 	instanceID string,
@@ -73,28 +85,28 @@ func (p *Provider) DeviceCreate(
 	// Get availability zone of the instance
 	descriptionI, err := ops.Describe()
 	description := descriptionI.(*ec2.Instance)
-
 	if err != nil {
 		return nil, err
 	}
+
+	// Create a volume request according to the parameters
 	az := description.Placement.AvailabilityZone
 
 	// Create a volume
 	size := int64(device.Size)
-	voltype := opsworks.VolumeTypeGp2
 	volreq := &ec2.Volume{
 		AvailabilityZone: az,
-		VolumeType:       &voltype,
 		Size:             &size,
 	}
+	if err = p.volumeRequestFromParameters(device, volreq); err != nil {
+		return nil, err
+	}
+
 	d, err := ops.Create(volreq, nil)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create volume: %v", err)
 	}
-	vol, ok := d.(*ec2.Volume)
-	if !ok {
-		panic("Create returned an unexpected type")
-	}
+	vol := d.(*ec2.Volume)
 
 	// Attach the volume
 	path, err := ops.Attach(*vol.VolumeId)

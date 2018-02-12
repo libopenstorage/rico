@@ -56,21 +56,26 @@ func TestWithAws(t *testing.T) {
 	// Create providers
 	storage := fake.New(topology)
 	cloud := aws.NewProvider()
+	class := Class{
+		Name:          "gp2",
+		WatermarkHigh: 75,
+		WatermarkLow:  25,
+		DiskSets:      1,
+		DiskSizeGb:    8,
+	}
+	config := &Config{
+		Classes: []Class{class},
+	}
 
 	// Create a new manager
-	im := NewManager(&Config{
-		watermarkHigh: 75,
-		watermarkLow:  25,
-		diskSets:      1,
-		diskSizeGb:    8,
-	}, cloud, storage)
+	im := NewManager(config, cloud, storage)
 	assert.NotNil(t, im)
 
 	// Start with a high watermark
 	assert.Equal(t, 0, storage.NumDevices())
 	storage.CurrentUtilization = 80
 	for i := 0; i < (2 * numInstances); i++ {
-		err := im.do()
+		err := im.do(&class)
 		assert.NoError(t, err)
 		assert.Equal(t, i+1, storage.NumDevices())
 	}
@@ -79,7 +84,7 @@ func TestWithAws(t *testing.T) {
 	// no changes to the devices
 	storage.CurrentUtilization = 50
 	for i := 0; i < (2 * numInstances); i++ {
-		err := im.do()
+		err := im.do(&class)
 		assert.NoError(t, err)
 		assert.Equal(t, 2*numInstances, storage.NumDevices())
 	}
@@ -87,7 +92,7 @@ func TestWithAws(t *testing.T) {
 	// Low watermark tests
 	storage.CurrentUtilization = 10
 	for i := 0; i < (2 * numInstances); i++ {
-		err := im.do()
+		err := im.do(&class)
 		assert.NoError(t, err)
 		assert.Equal(t, 2*numInstances-(i+1), storage.NumDevices())
 	}

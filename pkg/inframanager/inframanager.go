@@ -27,22 +27,35 @@ import (
 	"github.com/libopenstorage/rico/pkg/storageprovider"
 )
 
-// Config contains all the configuration settings
-type Config struct {
+// Class defines the type of storage to use for the appropriate
+// cloud provider
+type Class struct {
+	// Name of the class
+	Name string
+
+	// Parameters for this class
+	Parameters map[string]string
 
 	// Add storage if utilization is above this value
-	watermarkHigh int
+	WatermarkHigh int
 
 	// Remove storage if utilization is below this value
-	watermarkLow int
+	WatermarkLow int
 
 	// Add this many devices at a time. This is useful for systems
 	// which support multiple replicas
-	diskSets int
+	DiskSets int
 
 	// Size of the disk to add
 	// TODO: This may be adjusted in future changes
-	diskSizeGb uint64
+	DiskSizeGb uint64
+}
+
+// Config contains all the configuration settings
+type Config struct {
+
+	// Classes of storage to manage
+	Classes []Class
 }
 
 // Manager is an implementation of inframanager.Interface
@@ -79,9 +92,13 @@ func (m *Manager) Start() error {
 
 	m.running = true
 	m.quit = make(chan struct{})
-	started := make(chan bool)
-	go m.eventloop(started)
-	<-started
+
+	// Start eventloops
+	for _, class := range m.config.Classes {
+		started := make(chan bool)
+		go m.eventloop(started, class)
+		<-started
+	}
 	return nil
 }
 
@@ -103,7 +120,7 @@ func (m *Manager) IsRunning() bool {
 	return m.running
 }
 
-func (m *Manager) eventloop(started chan<- bool) {
+func (m *Manager) eventloop(started chan<- bool, class Class) {
 	dlog.Infoln("Started loop")
 	started <- true
 
@@ -116,29 +133,30 @@ func (m *Manager) eventloop(started chan<- bool) {
 			dlog.Infoln("Stopped loop")
 			return
 		case <-ticker.C:
-			if err := m.do(); err != nil {
+			if err := m.do(&class); err != nil {
 				dlog.Errorln("%v")
 			}
 		}
 	}
 }
 
-func (m *Manager) do() error {
+func (m *Manager) do(class *Class) error {
+	// Calculate utilization
 	utilization, err := m.storage.Utilization()
 	if err != nil {
 		return fmt.Errorf("Failed to get utilization: %v", err)
 	}
 
-	if utilization > m.config.watermarkHigh {
-		return m.addStorage()
-	} else if utilization < m.config.watermarkLow {
-		return m.removeStorage()
+	if utilization > class.WatermarkHigh {
+		return m.addStorage(class)
+	} else if utilization < class.WatermarkLow {
+		return m.removeStorage(class)
 	}
 
 	return nil
 }
 
-func (m *Manager) addStorage() error {
+func (m *Manager) addStorage(class *Class) error {
 	t, err := m.storage.GetTopology()
 	if err != nil {
 		return fmt.Errorf("Failed to get topology: %v", err)
@@ -149,7 +167,7 @@ func (m *Manager) addStorage() error {
 	}
 
 	// TODO: Get nodes from multiple separate zones
-	for set := 0; set < m.config.diskSets; set++ {
+	for set := 0; set < class.DiskSets; set++ {
 		// Pick a node
 		// TODO: This will be an inteface to a new algorithm object
 		node := t.Cluster.StorageNodes[0]
@@ -161,7 +179,8 @@ func (m *Manager) addStorage() error {
 
 		// Create and attach a disk to the node
 		device, err := m.cloud.DeviceCreate(node.Metadata.ID, &cloudprovider.DeviceSpecs{
-			Size: m.config.diskSizeGb,
+			Size:       class.DiskSizeGb,
+			Parameters: class.Parameters,
 		})
 		if err != nil {
 			return fmt.Errorf("Failed to add disk to node %s: %v",
@@ -182,7 +201,7 @@ func (m *Manager) addStorage() error {
 	return nil
 }
 
-func (m *Manager) removeStorage() error {
+func (m *Manager) removeStorage(class *Class) error {
 	t, err := m.storage.GetTopology()
 	if err != nil {
 		return fmt.Errorf("Failed to get topology: %v", err)
