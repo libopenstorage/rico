@@ -23,7 +23,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/service/ec2"
 	awsops "github.com/libopenstorage/openstorage/pkg/storageops/aws"
-	"github.com/libopenstorage/rico/pkg/cloudprovider"
+	"github.com/libopenstorage/rico/pkg/config"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -51,7 +51,7 @@ func TestAwsDeviceAddDelete(t *testing.T) {
 	assert.NotNil(t, a)
 
 	tests := []struct {
-		size     uint64
+		size     int64
 		instance string
 	}{
 		{
@@ -67,8 +67,8 @@ func TestAwsDeviceAddDelete(t *testing.T) {
 	// Add Devices
 	for _, test := range tests {
 		// Add a device to the instance
-		device, err := a.DeviceCreate(test.instance, &cloudprovider.DeviceSpecs{
-			Size: test.size,
+		device, err := a.DeviceCreate(test.instance, &config.Class{
+			DiskSizeGb: test.size,
 		})
 		assert.Nil(t, err)
 		assert.NotNil(t, device)

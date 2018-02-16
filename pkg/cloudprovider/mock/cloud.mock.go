@@ -7,6 +7,7 @@ package mock
 import (
 	gomock "github.com/golang/mock/gomock"
 	cloudprovider "github.com/libopenstorage/rico/pkg/cloudprovider"
+	config "github.com/libopenstorage/rico/pkg/config"
 	reflect "reflect"
 )
 
@@ -34,7 +35,7 @@ func (m *MockInterface) EXPECT() *MockInterfaceMockRecorder {
 }
 
 // DeviceCreate mocks base method
-func (m *MockInterface) DeviceCreate(arg0 string, arg1 *cloudprovider.DeviceSpecs) (*cloudprovider.Device, error) {
+func (m *MockInterface) DeviceCreate(arg0 string, arg1 *config.Class) (*cloudprovider.Device, error) {
 	ret := m.ctrl.Call(m, "DeviceCreate", arg0, arg1)
 	ret0, _ := ret[0].(*cloudprovider.Device)
 	ret1, _ := ret[1].(error)
@@ -56,4 +57,14 @@ func (m *MockInterface) DeviceDelete(arg0, arg1 string) error {
 // DeviceDelete indicates an expected call of DeviceDelete
 func (mr *MockInterfaceMockRecorder) DeviceDelete(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeviceDelete", reflect.TypeOf((*MockInterface)(nil).DeviceDelete), arg0, arg1)
+}
+
+// SetConfig mocks base method
+func (m *MockInterface) SetConfig(arg0 *config.Config) {
+	m.ctrl.Call(m, "SetConfig", arg0)
+}
+
+// SetConfig indicates an expected call of SetConfig
+func (mr *MockInterfaceMockRecorder) SetConfig(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetConfig", reflect.TypeOf((*MockInterface)(nil).SetConfig), arg0)
 }

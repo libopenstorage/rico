@@ -18,12 +18,6 @@ package inframanager
 
 // Interface is the interface to an infrastructure manager implementation
 type Interface interface {
-	// Start the service using a specific configuration
-	Start() error
-
-	// Stop the InfraManager service
-	Stop()
-
-	// IsRunning returns true if the service is running
-	IsRunning() bool
+	// Reconcile checks the system and takes action if any is needed
+	Reconcile() error
 }

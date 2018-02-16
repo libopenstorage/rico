@@ -22,6 +22,7 @@ import (
 
 	awsops "github.com/libopenstorage/openstorage/pkg/storageops/aws"
 	"github.com/libopenstorage/rico/pkg/cloudprovider"
+	"github.com/libopenstorage/rico/pkg/config"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -61,8 +62,11 @@ func NewProvider() *Provider {
 	}
 }
 
+// SetConfig does nothing
+func (p *Provider) SetConfig(config *config.Config) {}
+
 func (p *Provider) volumeRequestFromParameters(
-	device *cloudprovider.DeviceSpecs,
+	class *config.Class,
 	volreq *ec2.Volume,
 ) error {
 
@@ -76,7 +80,7 @@ func (p *Provider) volumeRequestFromParameters(
 // DeviceCreate creates and attaches a device to a specific node
 func (p *Provider) DeviceCreate(
 	instanceID string,
-	device *cloudprovider.DeviceSpecs,
+	class *config.Class,
 ) (*cloudprovider.Device, error) {
 
 	// Create an aws ops object
@@ -93,12 +97,11 @@ func (p *Provider) DeviceCreate(
 	az := description.Placement.AvailabilityZone
 
 	// Create a volume
-	size := int64(device.Size)
 	volreq := &ec2.Volume{
 		AvailabilityZone: az,
-		Size:             &size,
+		Size:             &class.DiskSizeGb,
 	}
-	if err = p.volumeRequestFromParameters(device, volreq); err != nil {
+	if err = p.volumeRequestFromParameters(class, volreq); err != nil {
 		return nil, err
 	}
 
@@ -125,7 +128,7 @@ func (p *Provider) DeviceCreate(
 	return &cloudprovider.Device{
 		ID:   *vol.VolumeId,
 		Path: path,
-		Size: uint64(*vol.Size),
+		Size: *vol.Size,
 	}, nil
 }
 
