@@ -26,6 +26,7 @@ import (
 	"github.com/libopenstorage/rico/pkg/storageprovider"
 
 	"github.com/libopenstorage/rico/pkg/cloudprovider/aws"
+	"github.com/libopenstorage/rico/pkg/config"
 	"github.com/libopenstorage/rico/pkg/storageprovider/fake"
 )
 
@@ -56,44 +57,84 @@ func TestWithAws(t *testing.T) {
 	// Create providers
 	storage := fake.New(topology)
 	cloud := aws.NewProvider()
-	class := Class{
-		Name:          "gp2",
-		WatermarkHigh: 75,
-		WatermarkLow:  25,
-		DiskSets:      1,
-		DiskSizeGb:    8,
+	class := config.Class{
+		Name:               "gp2",
+		WatermarkHigh:      75,
+		WatermarkLow:       25,
+		DiskSizeGb:         8,
+		MaximumTotalSizeGb: 1024,
+		MinimumTotalSizeGb: 32,
 	}
-	config := &Config{
-		Classes: []Class{class},
+	config := &config.Config{
+		Classes: []config.Class{class},
 	}
 
 	// Create a new manager
 	im := NewManager(config, cloud, storage)
 	assert.NotNil(t, im)
 
-	// Start with a high watermark
-	assert.Equal(t, 0, storage.NumDevices())
-	storage.CurrentUtilization = 80
-	for i := 0; i < (2 * numInstances); i++ {
-		err := im.do(&class)
+	// Fill topology with disks
+	topology, _ = storage.GetTopology()
+	assert.Equal(t, 0, topology.NumDevices())
+	loops := int(class.MinimumTotalSizeGb/class.DiskSizeGb) * 3
+	for i := 0; i < loops; i++ {
+		err := im.do()
 		assert.NoError(t, err)
-		assert.Equal(t, i+1, storage.NumDevices())
 	}
+	topology, _ = storage.GetTopology()
+	numDevices := topology.NumDevices()
+	assert.Equal(t, int(class.MinimumTotalSizeGb/class.DiskSizeGb), numDevices)
+
+	// Start with a high watermark
+	for i := 0; i < (2 * numInstances); i++ {
+		storage.SetUtilization(80)
+		err := im.do()
+		assert.NoError(t, err)
+		topology, _ = storage.GetTopology()
+		assert.Equal(t, numDevices+i+1, topology.NumDevices())
+	}
+	topology, _ = storage.GetTopology()
+	numDevices = topology.NumDevices()
 
 	// Not above or below watermark, so there should be
 	// no changes to the devices
-	storage.CurrentUtilization = 50
-	for i := 0; i < (2 * numInstances); i++ {
-		err := im.do(&class)
+	for i := 0; i < loops; i++ {
+		storage.SetUtilization(50)
+		err := im.do()
 		assert.NoError(t, err)
-		assert.Equal(t, 2*numInstances, storage.NumDevices())
+
+		topology, _ = storage.GetTopology()
+		assert.Equal(t, numDevices, topology.NumDevices())
 	}
 
 	// Low watermark tests
-	storage.CurrentUtilization = 10
-	for i := 0; i < (2 * numInstances); i++ {
-		err := im.do(&class)
+	for i := 0; i < numDevices; i++ {
+		storage.SetUtilization(10)
+		err := im.do()
 		assert.NoError(t, err)
-		assert.Equal(t, 2*numInstances-(i+1), storage.NumDevices())
+
+		topology, _ := storage.GetTopology()
+		assert.True(t, topology.TotalStorage(&class) >= class.MinimumTotalSizeGb)
+	}
+	topology, _ = storage.GetTopology()
+	numDevices = topology.NumDevices()
+	assert.Equal(t, int(class.MinimumTotalSizeGb/class.DiskSizeGb), numDevices)
+
+	// Delete all volumes
+	im.config.Classes[0].MinimumTotalSizeGb = 0
+	for i := 0; i < loops; i++ {
+		storage.SetUtilization(0)
+		topology, _ = storage.GetTopology()
+		numDevices = topology.NumDevices()
+
+		err := im.do()
+		assert.NoError(t, err)
+
+		topology, _ = storage.GetTopology()
+		if numDevices != 0 {
+			assert.Equal(t, numDevices-1, topology.NumDevices())
+		} else {
+			assert.Equal(t, 0, topology.NumDevices())
+		}
 	}
 }

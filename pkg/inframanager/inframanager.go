@@ -19,58 +19,28 @@ package inframanager
 import (
 	"fmt"
 	"sync"
-	"time"
 
 	"go.pedge.io/dlog"
 
 	"github.com/libopenstorage/rico/pkg/cloudprovider"
+	"github.com/libopenstorage/rico/pkg/config"
 	"github.com/libopenstorage/rico/pkg/storageprovider"
 )
 
-// Class defines the type of storage to use for the appropriate
-// cloud provider
-type Class struct {
-	// Name of the class
-	Name string
-
-	// Parameters for this class
-	Parameters map[string]string
-
-	// Add storage if utilization is above this value
-	WatermarkHigh int
-
-	// Remove storage if utilization is below this value
-	WatermarkLow int
-
-	// Add this many devices at a time. This is useful for systems
-	// which support multiple replicas
-	DiskSets int
-
-	// Size of the disk to add
-	// TODO: This may be adjusted in future changes
-	DiskSizeGb uint64
-}
-
-// Config contains all the configuration settings
-type Config struct {
-
-	// Classes of storage to manage
-	Classes []Class
-}
-
 // Manager is an implementation of inframanager.Interface
 type Manager struct {
-	config  Config
-	lock    sync.Mutex
-	running bool
-	quit    chan struct{}
-	cloud   cloudprovider.Interface
-	storage storageprovider.Interface
+	config    config.Config
+	lock      sync.Mutex
+	running   bool
+	quit      chan struct{}
+	reconcile chan struct{}
+	cloud     cloudprovider.Interface
+	storage   storageprovider.Interface
 }
 
 // NewManager returns a new infrastructure manager implementation
 func NewManager(
-	config *Config,
+	config *config.Config,
 	cloud cloudprovider.Interface,
 	storage storageprovider.Interface,
 ) *Manager {
@@ -93,12 +63,10 @@ func (m *Manager) Start() error {
 	m.running = true
 	m.quit = make(chan struct{})
 
-	// Start eventloops
-	for _, class := range m.config.Classes {
-		started := make(chan bool)
-		go m.eventloop(started, class)
-		<-started
-	}
+	// Start the eventloop
+	started := make(chan bool)
+	go m.eventloop(started)
+	<-started
 	return nil
 }
 
@@ -109,7 +77,6 @@ func (m *Manager) Stop() {
 
 	close(m.quit)
 	m.running = false
-
 }
 
 // IsRunning returns true if the eventloop is running
@@ -120,124 +87,126 @@ func (m *Manager) IsRunning() bool {
 	return m.running
 }
 
-func (m *Manager) eventloop(started chan<- bool, class Class) {
+// SetConfig saves a new configuration value
+func (m *Manager) SetConfig(config *config.Config) {
+	// TODO - LOCK
+	m.config = *config
+}
+
+// TODO:
+// Create a simple example of a loop outside this package
+func (m *Manager) eventloop(started chan<- bool) {
 	dlog.Infoln("Started loop")
 	started <- true
 
-	// This event loop is JUST a place holder. This is
-	// still under development.
-	ticker := time.NewTicker(time.Second)
+	// Wait to be told when to reconcile
 	for {
 		select {
 		case <-m.quit:
 			dlog.Infoln("Stopped loop")
 			return
-		case <-ticker.C:
-			if err := m.do(&class); err != nil {
-				dlog.Errorln("%v")
+		case <-m.reconcile:
+			if err := m.do(); err != nil {
+				dlog.Errorln("%v", err)
 			}
 		}
 	}
 }
 
-func (m *Manager) do(class *Class) error {
-	// Calculate utilization
-	utilization, err := m.storage.Utilization()
+func (m *Manager) do() error {
+
+	// Get topology from the storage system
+	t, err := m.storage.GetTopology()
 	if err != nil {
-		return fmt.Errorf("Failed to get utilization: %v", err)
+		return err
 	}
 
-	if utilization > class.WatermarkHigh {
-		return m.addStorage(class)
-	} else if utilization < class.WatermarkLow {
-		return m.removeStorage(class)
+	// Verify the topology was filled in correctly
+	if err := t.Verify(); err != nil {
+		return err
 	}
 
+	// Check the utilization of each class
+	for _, class := range m.config.Classes {
+		utilization := t.Utilization(&class)
+		totalStorage := t.TotalStorage(&class)
+
+		// Do not add any more storage if at the max
+		if (utilization >= class.WatermarkHigh &&
+			totalStorage+class.DiskSizeGb <= class.MaximumTotalSizeGb) ||
+			totalStorage < class.MinimumTotalSizeGb {
+			dlog.Infof("Adding storage")
+			return m.addStorage(t, &class)
+		}
+
+		if (utilization <= class.WatermarkLow &&
+			totalStorage-class.DiskSizeGb >= class.MinimumTotalSizeGb) ||
+			totalStorage > class.MaximumTotalSizeGb {
+			dlog.Infof("remove storage")
+			return m.removeStorage(t, &class)
+		}
+		dlog.Infof("No change")
+	}
 	return nil
 }
 
-func (m *Manager) addStorage(class *Class) error {
-	t, err := m.storage.GetTopology()
-	if err != nil {
-		return fmt.Errorf("Failed to get topology: %v", err)
-	}
+func (m *Manager) addStorage(t *storageprovider.Topology, class *config.Class) error {
+	// Pick a node
+	node := t.DetermineNodeToAddStorage()
 
-	if len(t.Cluster.StorageNodes) == 0 {
-		return fmt.Errorf("Cluster has no storage nodes")
-	}
+	// Determine how many disks we need to add to this node
+	// TODO: NumDisks to be added
+	numDisks, p := node.NumDisks(class)
 
-	// TODO: Get nodes from multiple separate zones
-	for set := 0; set < class.DiskSets; set++ {
-		// Pick a node
-		// TODO: This will be an inteface to a new algorithm object
-		node := t.Cluster.StorageNodes[0]
-		for _, currentNode := range t.Cluster.StorageNodes {
-			if len(currentNode.Devices) < len(node.Devices) {
-				node = currentNode
-			}
-		}
-
+	// Add disks to the node
+	devices := make([]*storageprovider.Device, 0)
+	for d := 0; d < numDisks; d++ {
 		// Create and attach a disk to the node
-		device, err := m.cloud.DeviceCreate(node.Metadata.ID, &cloudprovider.DeviceSpecs{
-			Size:       class.DiskSizeGb,
-			Parameters: class.Parameters,
-		})
+		device, err := m.cloud.DeviceCreate(node.Metadata.ID, class)
 		if err != nil {
 			return fmt.Errorf("Failed to add disk to node %s: %v",
 				node.Metadata.ID,
 				err)
 		}
-
-		// Notify storage system device has been added
-		err = m.storage.DeviceAdd(node, &storageprovider.Device{
-			Path: device.Path,
-			Size: device.Size,
+		devices = append(devices, &storageprovider.Device{
+			Class: class.Name,
+			Path:  device.Path,
+			Size:  device.Size,
 			Metadata: storageprovider.DeviceMetadata{
 				ID: device.ID,
-			},
-		})
+			}})
 	}
 
-	return nil
+	// Notify storage system device has been added
+	// TODO: Clean up on error
+	return m.storage.DeviceAdd(node, p, devices)
 }
 
-func (m *Manager) removeStorage(class *Class) error {
-	t, err := m.storage.GetTopology()
-	if err != nil {
-		return fmt.Errorf("Failed to get topology: %v", err)
-	}
-
-	if len(t.Cluster.StorageNodes) == 0 {
-		return fmt.Errorf("Cluster has no storage nodes")
-	}
-
+func (m *Manager) removeStorage(t *storageprovider.Topology, class *config.Class) error {
 	// Pick a device
-	// This is a silly algorithm for now
-	// TODO: This will be an inteface to a new algorithm object
-	var device *storageprovider.Device
-	var node *storageprovider.StorageNode
-	for _, currentNode := range t.Cluster.StorageNodes {
-		for _, currentDevice := range currentNode.Devices {
-			if device == nil {
-				node = currentNode
-				device = currentDevice
-			} else if currentDevice.Utilization < device.Utilization {
-				node = currentNode
-				device = currentDevice
-			}
-		}
-	}
+	node, pool, device := t.DetermineStorageToRemove(class)
 
 	// Nothing to do
 	if device == nil {
+		dlog.Infof("No device found to remove")
 		return nil
 	}
 
 	// Remove drive from the storage system
-	if err = m.storage.DeviceRemove(node, device); err != nil {
+	cloudDevices, err := m.storage.DeviceRemove(node, pool, device)
+	if err != nil {
 		return err
 	}
 
 	// Delete cloud drive
-	return m.cloud.DeviceDelete(node.Metadata.ID, device.Metadata.ID)
+	var deleteErr error
+	for _, d := range cloudDevices {
+		err = m.cloud.DeviceDelete(node.Metadata.ID, device.Metadata.ID)
+		if err != nil {
+			deleteErr = err
+			dlog.Errorf("Failed to remove cloud device %s: %v",
+				d.Metadata.ID, err)
+		}
+	}
+	return deleteErr
 }
