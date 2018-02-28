@@ -162,7 +162,7 @@ func main() {
 		Aliases: []string{"cd"},
 		Func: func(c *ishell.Context) {
 			if len(c.Args) < 1 {
-				c.Err(fmt.Errorf("Missing class name: class-delte <name>"))
+				c.Err(fmt.Errorf("Missing class name: class-delete <name>"))
 				return
 			}
 			className := c.Args[0]
@@ -198,7 +198,7 @@ func main() {
 		Func: func(c *ishell.Context) {
 			if len(c.Args) < 6 {
 				c.Err(fmt.Errorf("Missing arguments: " +
-					"ca name=<name> " +
+					"class-add name=<name> " +
 					"wh=<watermark high> " +
 					"wl=<watermark low> " +
 					"size=<disk size Gi> " +
