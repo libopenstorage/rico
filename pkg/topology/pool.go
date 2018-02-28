@@ -1,5 +1,5 @@
 /*
-Package config provides the configuration to the Manager
+Package topology defines how to get information from the infrastructure
 Copyright 2018 Portworx
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,11 +14,19 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package config
+package topology
 
-// Config contains all the configuration settings
-type Config struct {
+import (
+	"fmt"
+)
 
-	// Classes of storage to manage
-	Classes []Class `json:"classes"`
+// Verify returns an error if the pool has any missing data
+func (p *Pool) Verify() error {
+	if p.SetSize == 0 {
+		return fmt.Errorf("Size in pool cannot be zero")
+	}
+	if len(p.Class) == 0 {
+		return fmt.Errorf("Pool class type cannot be empty")
+	}
+	return nil
 }

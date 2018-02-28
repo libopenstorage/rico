@@ -44,5 +44,5 @@ type Interface interface {
 	DeviceCreate(instanceID string, class *config.Class) (*Device, error)
 
 	// DeviceDelete detaches and deletes a cloud block device from a node
-	DeviceDelete(instanceID string, deviceID string) error
+	DeviceDelete(instanceID, deviceID string) error
 }

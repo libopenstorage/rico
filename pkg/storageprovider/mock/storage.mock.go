@@ -7,7 +7,7 @@ package mock
 import (
 	gomock "github.com/golang/mock/gomock"
 	config "github.com/libopenstorage/rico/pkg/config"
-	storageprovider "github.com/libopenstorage/rico/pkg/storageprovider"
+	topology "github.com/libopenstorage/rico/pkg/topology"
 	reflect "reflect"
 )
 
@@ -35,7 +35,7 @@ func (m *MockInterface) EXPECT() *MockInterfaceMockRecorder {
 }
 
 // DeviceAdd mocks base method
-func (m *MockInterface) DeviceAdd(arg0 *storageprovider.StorageNode, arg1 *storageprovider.Pool, arg2 []*storageprovider.Device) error {
+func (m *MockInterface) DeviceAdd(arg0 *topology.StorageNode, arg1 *topology.Pool, arg2 []*topology.Device) error {
 	ret := m.ctrl.Call(m, "DeviceAdd", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -47,9 +47,9 @@ func (mr *MockInterfaceMockRecorder) DeviceAdd(arg0, arg1, arg2 interface{}) *go
 }
 
 // DeviceRemove mocks base method
-func (m *MockInterface) DeviceRemove(arg0 *storageprovider.StorageNode, arg1 *storageprovider.Pool, arg2 *storageprovider.Device) ([]*storageprovider.Device, error) {
+func (m *MockInterface) DeviceRemove(arg0 *topology.StorageNode, arg1 *topology.Pool, arg2 *topology.Device) ([]*topology.Device, error) {
 	ret := m.ctrl.Call(m, "DeviceRemove", arg0, arg1, arg2)
-	ret0, _ := ret[0].([]*storageprovider.Device)
+	ret0, _ := ret[0].([]*topology.Device)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -60,9 +60,9 @@ func (mr *MockInterfaceMockRecorder) DeviceRemove(arg0, arg1, arg2 interface{}) 
 }
 
 // GetTopology mocks base method
-func (m *MockInterface) GetTopology() (*storageprovider.Topology, error) {
+func (m *MockInterface) GetTopology() (*topology.Topology, error) {
 	ret := m.ctrl.Call(m, "GetTopology")
-	ret0, _ := ret[0].(*storageprovider.Topology)
+	ret0, _ := ret[0].(*topology.Topology)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
