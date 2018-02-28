@@ -11,7 +11,7 @@ test:
 	go test $(PKGS)
 
 lint:
-	go get -u github.com/golang/lint/golint
+	if [ ! -x $(GOPATH)/bin/golint ] ; then go get -u github.com/golang/lint/golint; fi
 	golint -set_exit_status $(PKGS)
 
 vet:

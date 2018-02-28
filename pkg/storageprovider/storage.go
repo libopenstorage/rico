@@ -19,102 +19,8 @@ package storageprovider
 
 import (
 	"github.com/libopenstorage/rico/pkg/config"
+	"github.com/libopenstorage/rico/pkg/topology"
 )
-
-// DeviceMetadata contains cloud metadata for the device
-type DeviceMetadata struct {
-	// Cloud volume id for this device
-	ID string
-}
-
-// Device contains information about the device of the storage system
-type Device struct {
-	// Path of the block device node
-	Path string
-
-	// Class of device
-	Class string
-
-	// Pool name
-	Pool string
-
-	// Size in GiB
-	Size int64
-
-	// Utilization of the device as a percentage number
-	Utilization int
-
-	// Metadata has cloud identification for the device
-	Metadata DeviceMetadata
-
-	// Private can be used by the storage system as a cookie
-	Private interface{}
-}
-
-// Pool contains a set of devices
-type Pool struct {
-	// Name or ID of the pool if any
-	Name string
-
-	// SetSize is the number of disks that should be added
-	// or removed from the pool
-	SetSize int
-
-	// Utilization of the pool according to the storage system. The storage
-	// provider must supply this information according their pool implementation
-	Utilization int
-
-	// Class of device used
-	Class string
-
-	// Private can be used by the storage system as a cookie
-	Private interface{}
-}
-
-// InstanceMetadata contains cloud information about the instance
-type InstanceMetadata struct {
-	// ID is the cloud instance ID
-	ID string
-
-	// Zone holds cloud failure domain information
-	Zone string
-}
-
-// StorageNode defines information about the node
-type StorageNode struct {
-	// Name/ID is the name of the node according to the storage system
-	Name string
-
-	// Metadata is the cloud information about this instance
-	Metadata InstanceMetadata
-
-	// Devices is a list of devices on this node
-	Devices []*Device
-
-	// Pool of devices on the node. Keys are the names of the pool
-	Pools map[string]*Pool
-
-	// Classes is a list of classes supported. If none are provided,
-	// it defaults to all
-	Classes []string
-
-	// Private can be used by the storage system as a cookie
-	Private interface{}
-}
-
-// StorageCluster is a collection of nodes
-type StorageCluster struct {
-	// StorageNodes is a list of nodes on this cluster
-	StorageNodes []*StorageNode
-
-	// Private can be used by the storage system as a cookie
-	Private interface{}
-}
-
-// Topology contains the entire topology of the storage system
-type Topology struct {
-	Cluster StorageCluster
-}
 
 // Interface is a pluggable interface for storage providers
 type Interface interface {
@@ -122,15 +28,15 @@ type Interface interface {
 	SetConfig(*config.Config)
 
 	// Topology returns the current topology and utilization of the storage system
-	GetTopology() (*Topology, error)
+	GetTopology() (*topology.Topology, error)
 
 	// DeviceAdd notifies the storage provider a devices have been added
 	// If Pool is nil if it is up to the storage system to decide which pool
 	// to add it to if any.
-	DeviceAdd(*StorageNode, *Pool, []*Device) error
+	DeviceAdd(*topology.StorageNode, *topology.Pool, []*topology.Device) error
 
 	// DeviceRemove requests to remove a device from the storage system.
 	// The storage system must return a list of devices to then remove
 	// from the infrastructure.
-	DeviceRemove(*StorageNode, *Pool, *Device) ([]*Device, error)
+	DeviceRemove(*topology.StorageNode, *topology.Pool, *topology.Device) ([]*topology.Device, error)
 }

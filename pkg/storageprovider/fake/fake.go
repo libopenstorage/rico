@@ -18,20 +18,22 @@ limitations under the License.
 package fake
 
 import (
+	"fmt"
+
 	"github.com/libopenstorage/rico/pkg/config"
-	"github.com/libopenstorage/rico/pkg/storageprovider"
+	"github.com/libopenstorage/rico/pkg/topology"
 	"github.com/lpabon/godbc"
 )
 
 // This is for tests only
 
-// Fake is an memory-only implementation of the storageprovider.Interface
+// Fake is an memory-only implementation of the topology.Interface
 type Fake struct {
-	Topology *storageprovider.Topology
+	Topology *topology.Topology
 }
 
 // New returns a new Fake storage implementation
-func New(t *storageprovider.Topology) *Fake {
+func New(t *topology.Topology) *Fake {
 	return &Fake{
 		Topology: t,
 	}
@@ -41,34 +43,38 @@ func New(t *storageprovider.Topology) *Fake {
 func (f *Fake) SetConfig(*config.Config) {}
 
 // GetTopology returns the topology kept in memory
-func (f *Fake) GetTopology() (*storageprovider.Topology, error) {
+func (f *Fake) GetTopology() (*topology.Topology, error) {
 	return f.Topology, nil
 }
 
 // SetUtilization sets all the nodes to the specified utilization
 func (f *Fake) SetUtilization(
+	class *config.Class,
 	utilization int,
 ) {
 	for _, n := range f.Topology.Cluster.StorageNodes {
-		f.SetNodeUtilization(n, utilization)
+		f.SetNodeUtilization(n, class, utilization)
 	}
 }
 
 // SetNodeUtilization sets all the devices to a utilization
 func (f *Fake) SetNodeUtilization(
-	node *storageprovider.StorageNode,
+	node *topology.StorageNode,
+	class *config.Class,
 	utilization int,
 ) {
 	for _, d := range node.Devices {
-		d.Utilization = utilization
+		if d.Class == class.Name {
+			d.Utilization = utilization
+		}
 	}
 }
 
 // DeviceAdd adds a device to the topology
 func (f *Fake) DeviceAdd(
-	node *storageprovider.StorageNode,
-	pool *storageprovider.Pool,
-	devices []*storageprovider.Device,
+	node *topology.StorageNode,
+	pool *topology.Pool,
+	devices []*topology.Device,
 ) error {
 
 	godbc.Require(pool == nil)
@@ -86,12 +92,39 @@ func (f *Fake) DeviceAdd(
 	return nil
 }
 
+// NodeAdd adds a new node to the topology
+func (f *Fake) NodeAdd(node *topology.StorageNode) error {
+	f.Topology.Cluster.StorageNodes = append(f.Topology.Cluster.StorageNodes, node)
+	return nil
+}
+
+// NodeDelete removes a node and all its devices from the topology
+func (f *Fake) NodeDelete(instanceID string) error {
+	index := 0
+	found := false
+	nodes := f.Topology.Cluster.StorageNodes
+	for i, node := range nodes {
+		if node.Metadata.ID == instanceID {
+			found = true
+			index = i
+			break
+		}
+	}
+
+	if !found {
+		return fmt.Errorf("Instance %s not found", instanceID)
+	}
+	nodes[index] = nodes[len(nodes)-1]
+	nodes = nodes[:len(nodes)-1]
+	return nil
+}
+
 // DeviceRemove removes a device from the topology
 func (f *Fake) DeviceRemove(
-	node *storageprovider.StorageNode,
-	pool *storageprovider.Pool,
-	device *storageprovider.Device,
-) ([]*storageprovider.Device, error) {
+	node *topology.StorageNode,
+	pool *topology.Pool,
+	device *topology.Device,
+) ([]*topology.Device, error) {
 	found := false
 	for _, sn := range f.Topology.Cluster.StorageNodes {
 		if sn.Metadata.ID == node.Metadata.ID {
@@ -111,5 +144,5 @@ func (f *Fake) DeviceRemove(
 		}
 	}
 	godbc.Ensure(found == true)
-	return []*storageprovider.Device{device}, nil
+	return []*topology.Device{device}, nil
 }

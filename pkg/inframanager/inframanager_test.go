@@ -23,11 +23,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/libopenstorage/rico/pkg/storageprovider"
-
 	"github.com/libopenstorage/rico/pkg/cloudprovider/aws"
 	"github.com/libopenstorage/rico/pkg/config"
 	"github.com/libopenstorage/rico/pkg/storageprovider/fake"
+	"github.com/libopenstorage/rico/pkg/topology"
 )
 
 func TestWithAws(t *testing.T) {
@@ -40,16 +39,16 @@ func TestWithAws(t *testing.T) {
 	numInstances := len(instances)
 
 	// Create a topology
-	nodes := make([]*storageprovider.StorageNode, numInstances)
+	nodes := make([]*topology.StorageNode, numInstances)
 	for i, instance := range instances {
-		nodes[i] = &storageprovider.StorageNode{
-			Metadata: storageprovider.InstanceMetadata{
+		nodes[i] = &topology.StorageNode{
+			Metadata: topology.InstanceMetadata{
 				ID: instance,
 			},
 		}
 	}
-	topology := &storageprovider.Topology{
-		Cluster: storageprovider.StorageCluster{
+	topology := &topology.Topology{
+		Cluster: topology.StorageCluster{
 			StorageNodes: nodes,
 		},
 	}
@@ -87,7 +86,7 @@ func TestWithAws(t *testing.T) {
 
 	// Start with a high watermark
 	for i := 0; i < (2 * numInstances); i++ {
-		storage.SetUtilization(80)
+		storage.SetUtilization(&class, 80)
 		err := im.do()
 		assert.NoError(t, err)
 		topology, _ = storage.GetTopology()
@@ -99,7 +98,7 @@ func TestWithAws(t *testing.T) {
 	// Not above or below watermark, so there should be
 	// no changes to the devices
 	for i := 0; i < loops; i++ {
-		storage.SetUtilization(50)
+		storage.SetUtilization(&class, 50)
 		err := im.do()
 		assert.NoError(t, err)
 
@@ -109,7 +108,7 @@ func TestWithAws(t *testing.T) {
 
 	// Low watermark tests
 	for i := 0; i < numDevices; i++ {
-		storage.SetUtilization(10)
+		storage.SetUtilization(&class, 10)
 		err := im.do()
 		assert.NoError(t, err)
 
@@ -123,7 +122,7 @@ func TestWithAws(t *testing.T) {
 	// Delete all volumes
 	im.config.Classes[0].MinimumTotalSizeGb = 0
 	for i := 0; i < loops; i++ {
-		storage.SetUtilization(0)
+		storage.SetUtilization(&class, 0)
 		topology, _ = storage.GetTopology()
 		numDevices = topology.NumDevices()
 

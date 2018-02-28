@@ -29,13 +29,17 @@
   branch = "master"
 
 [[constraint]]
+  name = "github.com/abiosoft/ishell"
+  branch = "master"
+
+[[override]]
+  name = "github.com/chzyer/readline"
+  branch = "master"
+
+[[constraint]]
   name = "github.com/golang/mock"
   version = "1.0.0"
 
 [prune]
   go-tests = true
   unused-packages = true
-
-[[constraint]]
-  branch = "master"
-  name = "go.pedge.io/dlog"

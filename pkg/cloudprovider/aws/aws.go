@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/libopenstorage/logrus"
 	awsops "github.com/libopenstorage/openstorage/pkg/storageops/aws"
 	"github.com/libopenstorage/rico/pkg/cloudprovider"
 	"github.com/libopenstorage/rico/pkg/config"
@@ -28,7 +29,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/opsworks"
-	"go.pedge.io/dlog"
 )
 
 // Provider has the client and state information to communicate with AWS
@@ -42,7 +42,7 @@ func NewProvider() *Provider {
 	// https://docs.aws.amazon.com/cli/latest/userguide/cli-environment.html
 	region := os.Getenv("AWS_DEFAULT_REGION")
 	if len(region) == 0 {
-		dlog.Errorf("AWS_DEFAULT_REGION not defined")
+		logrus.Errorf("AWS_DEFAULT_REGION not defined")
 		return nil
 	}
 
@@ -118,9 +118,9 @@ func (p *Provider) DeviceCreate(
 			*vol.VolumeId,
 			instanceID,
 			err)
-		dlog.Errorf(err.Error())
+		logrus.Errorf(err.Error())
 		if err := ops.Delete(*vol.VolumeId); err != nil {
-			dlog.Errorf("Failed to delete volume %s: %v", *vol.VolumeId, err)
+			logrus.Errorf("Failed to delete volume %s: %v", *vol.VolumeId, err)
 		}
 		return nil, reterr
 	}
