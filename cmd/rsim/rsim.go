@@ -73,7 +73,7 @@ func main() {
 				},
 			})
 		},
-		Help: "Add a node to the storage system",
+		Help: "add a node to the storage system",
 	})
 
 	// Utilization set
@@ -106,7 +106,7 @@ func main() {
 			}
 
 		},
-		Help: "Set utilization of a class across the cluster",
+		Help: "set utilization of a class across the cluster",
 	})
 
 	// Show topology
@@ -127,7 +127,7 @@ func main() {
 			c.Println("")
 			c.Println(t)
 		},
-		Help: "Show storage topoology",
+		Help: "show storage topology",
 	})
 
 	// Reconcile
@@ -141,7 +141,7 @@ func main() {
 				c.Err(err)
 			}
 		},
-		Help: "Reconcile once",
+		Help: "reconcile once",
 	})
 
 	// List classes
@@ -153,7 +153,7 @@ func main() {
 				c.Printf("%v\n", class)
 			}
 		},
-		Help: "List classes",
+		Help: "list classes",
 	})
 
 	// Delete class
@@ -188,7 +188,7 @@ func main() {
 			im.SetConfig(configuration)
 			c.Println("OK")
 		},
-		Help: "Delete class",
+		Help: "delete a class",
 	})
 
 	// Add class
@@ -276,7 +276,7 @@ func main() {
 			im.SetConfig(configuration)
 			c.Println("OK")
 		},
-		Help: "Add class",
+		Help: "add a class",
 	})
 
 	// Run shell
