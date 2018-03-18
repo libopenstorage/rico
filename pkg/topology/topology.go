@@ -49,68 +49,6 @@ func (t *Topology) TotalStorage(class *config.Class) int64 {
 	return total
 }
 
-// DetermineNodeToAddStorage returns a node on the cluster which will be used to add storage
-// TODO: This will be an inteface to a new algorithm object
-func (t *Topology) DetermineNodeToAddStorage() *StorageNode {
-	node := t.Cluster.StorageNodes[0]
-	for _, currentNode := range t.Cluster.StorageNodes {
-		if len(currentNode.Devices) < len(node.Devices) {
-			node = currentNode
-		}
-	}
-
-	return node
-}
-
-// DetermineStorageToRemove returns device to remove
-// TODO: This will be an inteface to a new algorithm object
-func (t *Topology) DetermineStorageToRemove(
-	class *config.Class,
-) (*StorageNode, *Pool, *Device) {
-	var (
-		node   *StorageNode
-		device *Device
-		pool   *Pool
-	)
-
-	// Get the node
-	for _, currentNode := range t.Cluster.StorageNodes {
-		devices := currentNode.DevicesForClass(class)
-		if len(devices) == 0 {
-			continue
-		}
-
-		// Check pools on this node
-		if len(currentNode.Pools) != 0 {
-			for _, currentpool := range node.Pools {
-				if currentpool.Class == class.Name {
-					if pool == nil ||
-						currentpool.Utilization < pool.Utilization {
-						pool = currentpool
-					}
-				}
-			}
-
-			// Pick devices in the pull
-			devices = node.DevicesOnPool(pool)
-		}
-
-		for _, currentDevice := range devices {
-			if device == nil ||
-				currentDevice.Utilization < device.Utilization {
-				node = currentNode
-				device = currentDevice
-			}
-		}
-
-	}
-	if node == nil {
-		return nil, nil, nil
-	}
-
-	return node, pool, device
-}
-
 // Verify confirms that the topology has the information required
 // TODO: This is not complete while this is WIP
 func (t *Topology) Verify() error {
