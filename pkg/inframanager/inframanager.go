@@ -21,6 +21,7 @@ import (
 	"sync"
 
 	"github.com/libopenstorage/logrus"
+	"github.com/libopenstorage/rico/pkg/allocator"
 	"github.com/libopenstorage/rico/pkg/cloudprovider"
 	"github.com/libopenstorage/rico/pkg/config"
 	"github.com/libopenstorage/rico/pkg/storageprovider"
@@ -36,6 +37,7 @@ type Manager struct {
 	reconcile chan struct{}
 	cloud     cloudprovider.Interface
 	storage   storageprovider.Interface
+	allocator allocator.Interface
 }
 
 // NewManager returns a new infrastructure manager implementation
@@ -43,11 +45,13 @@ func NewManager(
 	config *config.Config,
 	cloud cloudprovider.Interface,
 	storage storageprovider.Interface,
+	allocator allocator.Interface,
 ) *Manager {
 	return &Manager{
-		config:  *config,
-		cloud:   cloud,
-		storage: storage,
+		config:    *config,
+		cloud:     cloud,
+		storage:   storage,
+		allocator: allocator,
 	}
 }
 
@@ -104,7 +108,10 @@ func (m *Manager) do() error {
 
 func (m *Manager) addStorage(t *topology.Topology, class *config.Class) error {
 	// Pick a node
-	node := t.DetermineNodeToAddStorage()
+	node, err := m.allocator.DetermineNodeToAddStorage(t, class)
+	if err != nil {
+		return err
+	}
 
 	// Determine how many disks we need to add to this node
 	// TODO: NumDisks to be added
@@ -145,7 +152,7 @@ func (m *Manager) addStorage(t *topology.Topology, class *config.Class) error {
 
 func (m *Manager) removeStorage(t *topology.Topology, class *config.Class) error {
 	// Pick a device
-	node, pool, device := t.DetermineStorageToRemove(class)
+	node, pool, device := m.allocator.DetermineStorageToRemove(t, class)
 
 	// Nothing to do
 	if device == nil {

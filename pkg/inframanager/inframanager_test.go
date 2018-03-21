@@ -23,6 +23,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/libopenstorage/rico/pkg/allocator/roundrobin"
 	"github.com/libopenstorage/rico/pkg/cloudprovider/aws"
 	"github.com/libopenstorage/rico/pkg/config"
 	"github.com/libopenstorage/rico/pkg/storageprovider/fake"
@@ -67,9 +68,11 @@ func TestWithAws(t *testing.T) {
 	config := &config.Config{
 		Classes: []config.Class{class},
 	}
+	rr := roundrobin.New()
 
 	// Create a new manager
-	im := NewManager(config, cloud, storage)
+
+	im := NewManager(config, cloud, storage, rr)
 	assert.NotNil(t, im)
 
 	// Fill topology with disks

@@ -14,120 +14,120 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
-package topology
+package roundrobin
 
 import (
 	"testing"
 
 	"github.com/libopenstorage/rico/pkg/config"
+	"github.com/libopenstorage/rico/pkg/topology"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestStorageNodeDetermineStorageToRemove(t *testing.T) {
-	topology := &Topology{
-		Cluster: StorageCluster{
-			StorageNodes: []*StorageNode{
-				&StorageNode{
-					Metadata: InstanceMetadata{
+func TestRRDetermineStorageToRemove(t *testing.T) {
+	testTopology := &topology.Topology{
+		Cluster: topology.StorageCluster{
+			StorageNodes: []*topology.StorageNode{
+				&topology.StorageNode{
+					Metadata: topology.InstanceMetadata{
 						ID: "one",
 					},
-					Devices: []*Device{
-						&Device{
+					Devices: []*topology.Device{
+						&topology.Device{
 							Class:       "c1",
 							Utilization: 30,
-							Metadata: DeviceMetadata{
+							Metadata: topology.DeviceMetadata{
 								ID: "d1",
 							},
 						},
-						&Device{
+						&topology.Device{
 							Class:       "c1",
 							Utilization: 1,
-							Metadata: DeviceMetadata{
+							Metadata: topology.DeviceMetadata{
 								ID: "d2",
 							},
 						},
-						&Device{
+						&topology.Device{
 							Class:       "c2",
 							Utilization: 4,
-							Metadata: DeviceMetadata{
+							Metadata: topology.DeviceMetadata{
 								ID: "d3",
 							},
 						},
-						&Device{
+						&topology.Device{
 							Class:       "c2",
 							Utilization: 3,
-							Metadata: DeviceMetadata{
+							Metadata: topology.DeviceMetadata{
 								ID: "d4",
 							},
 						},
 					},
 				},
-				&StorageNode{
-					Metadata: InstanceMetadata{
+				&topology.StorageNode{
+					Metadata: topology.InstanceMetadata{
 						ID: "two",
 					},
-					Devices: []*Device{
-						&Device{
+					Devices: []*topology.Device{
+						&topology.Device{
 							Class:       "c3",
 							Utilization: 3,
-							Metadata: DeviceMetadata{
+							Metadata: topology.DeviceMetadata{
 								ID: "d1",
 							},
 						},
-						&Device{
+						&topology.Device{
 							Class:       "c3",
 							Utilization: 3,
-							Metadata: DeviceMetadata{
+							Metadata: topology.DeviceMetadata{
 								ID: "d2",
 							},
 						},
-						&Device{
+						&topology.Device{
 							Class:       "c3",
 							Utilization: 3,
-							Metadata: DeviceMetadata{
+							Metadata: topology.DeviceMetadata{
 								ID: "d3",
 							},
 						},
-						&Device{
+						&topology.Device{
 							Class:       "c3",
 							Utilization: 3,
-							Metadata: DeviceMetadata{
+							Metadata: topology.DeviceMetadata{
 								ID: "d4",
 							},
 						},
 					},
 				},
-				&StorageNode{
-					Metadata: InstanceMetadata{
+				&topology.StorageNode{
+					Metadata: topology.InstanceMetadata{
 						ID: "three",
 					},
-					Devices: []*Device{
-						&Device{
+					Devices: []*topology.Device{
+						&topology.Device{
 							Class:       "c1",
 							Utilization: 30,
-							Metadata: DeviceMetadata{
+							Metadata: topology.DeviceMetadata{
 								ID: "d1",
 							},
 						},
-						&Device{
+						&topology.Device{
 							Class:       "c1",
 							Utilization: 30,
-							Metadata: DeviceMetadata{
+							Metadata: topology.DeviceMetadata{
 								ID: "d2",
 							},
 						},
-						&Device{
+						&topology.Device{
 							Class:       "c2",
 							Utilization: 30,
-							Metadata: DeviceMetadata{
+							Metadata: topology.DeviceMetadata{
 								ID: "d3",
 							},
 						},
-						&Device{
+						&topology.Device{
 							Class:       "c2",
 							Utilization: 30,
-							Metadata: DeviceMetadata{
+							Metadata: topology.DeviceMetadata{
 								ID: "d4",
 							},
 						},
@@ -137,7 +137,8 @@ func TestStorageNodeDetermineStorageToRemove(t *testing.T) {
 		},
 	}
 
-	n, p, d := topology.DetermineStorageToRemove(&config.Class{
+	rr := New()
+	n, p, d := rr.DetermineStorageToRemove(testTopology, &config.Class{
 		Name: "c2",
 	})
 	assert.NotNil(t, n)

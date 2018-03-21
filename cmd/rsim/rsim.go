@@ -21,6 +21,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/libopenstorage/rico/pkg/allocator/roundrobin"
 	fakecloud "github.com/libopenstorage/rico/pkg/cloudprovider/fake"
 	"github.com/libopenstorage/rico/pkg/config"
 	"github.com/libopenstorage/rico/pkg/inframanager"
@@ -39,6 +40,7 @@ ca name=large wh=75 wl=25 size=250 max=10240 min=1024
 func main() {
 	fc := fakecloud.New()
 	fs := fakestorage.New(&topology.Topology{})
+	rr := roundrobin.New()
 	class := config.Class{
 		Name:               "gp2",
 		WatermarkHigh:      75,
@@ -50,7 +52,7 @@ func main() {
 	configuration := &config.Config{
 		Classes: []config.Class{class},
 	}
-	im := inframanager.NewManager(configuration, fc, fs)
+	im := inframanager.NewManager(configuration, fc, fs, rr)
 
 	// ishell
 	shell := ishell.New()
